@@ -130,6 +130,7 @@ table.d th.y{background:var(--yellow)}
 table.d th.l,table.d td.l{text-align:left}
 table.d td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--line)}
 table.d tr:last-child td{border-bottom:0}
+table.d tr.sep td{border-top:2px solid #605e5c}
 table.d tbody tr:hover td{background:#f8fbff}
 table.d tr.me td{background:var(--brand-l);font-weight:600}
 table.d td.nm{font-weight:600;text-align:left}
@@ -893,7 +894,7 @@ function renderPoints() {
     P.rows.map(r => {
       const first = r.team !== last; last = r.team;
       const cnt = P.rows.filter(x => x.team === r.team).length;
-      return `<tr>${first ? `<td class="nm" rowspan="${cnt}" style="background:var(--brand-l);vertical-align:middle;text-align:center;white-space:nowrap">${r.teamNo ? `<a href="#/equipe/${r.teamNo}/stats">${esc(r.div)} Équipe ${r.teamNo}</a>` : esc(r.team)}</td>` : ''}<td>${r.base ?? ''}</td><td class="nm">${esc(r.name)}</td>${r.vals.map(cell).join('')}
+      return `<tr class="${first && P.rows.indexOf(r) > 0 ? 'sep' : ''}">${first ? `<td class="nm" rowspan="${cnt}" style="background:var(--brand-l);vertical-align:middle;text-align:center;white-space:nowrap">${r.teamNo ? `<a href="#/equipe/${r.teamNo}/stats">${esc(r.div)} Équipe ${r.teamNo}</a>` : esc(r.team)}</td>` : ''}<td>${r.base ?? ''}</td><td class="nm">${esc(r.name)}</td>${r.vals.map(cell).join('')}
       <td style="min-width:130px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:10px;position:relative;background:#f3f2f1;border-radius:5px"><i style="position:absolute;top:0;bottom:0;${r.total >= 0 ? 'left:50%' : 'right:50%'};width:${Math.abs(r.total) / maxAbs * 50}%;background:${r.total >= 0 ? '#4caf50' : '#e53935'};border-radius:5px"></i></div>${sgn(r.total)}</div></td><td><b>${fmtN(r.live)}</b></td></tr>`;
     }).join('')}</tbody></table></div>`;
   return h;
