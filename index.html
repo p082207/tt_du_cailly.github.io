@@ -281,6 +281,7 @@ const key  = s => norm(s).toUpperCase();
 const isNum = v => typeof v === 'number' && isFinite(v);
 const num = v => (isNum(v) ? v : null);
 const caillyNum = s => { const m = key(s).match(/TT DU CAILLY\s*(\d+)/); return m ? +m[1] : null; };
+const noAcc = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const colNum = L => L.split('').reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0);
 const xmlDecode = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
 
@@ -430,7 +431,7 @@ function parseTeamSheet(S) {
     for (let c = 2; c <= 12; c++) { const h = norm(S.g(hr, c)).toLowerCase(); if (map[h] && !cm[map[h]]) cm[map[h]] = c; }
     for (let r = hr + 1; r <= hr + 40; r++) {
       const name = norm(S.g(r, 1)); if (!name) break;
-      const p = { name, short: norm(S.g(r, 12)) || name.split(' ').pop() };
+      const p = { name: noAcc(name), short: noAcc(norm(S.g(r, 12)) || name.split(' ').pop()) };
       for (const k of Object.keys(cm)) p[k] = num(S.g(r, cm[k]));
       for (const k of ['mj', 'v', 'd', 'perfs', 'contres']) if (p[k] === null) p[k] = 0;
       p.pct = p.mj > 0 ? p.v / p.mj * 100 : null;
@@ -454,7 +455,7 @@ function parseTeamSheet(S) {
     for (let r = pr + 3; r <= pr + 40; r++) {
       const name = norm(S.g(r, 1));
       if (!name || /equipe\s*\d/i.test(name)) break;
-      pl.rows.push({ name, cells: pl.dates.map((_, i) => { const v = norm(S.g(r, i + 2)); return v === '√' || v === '✓' ? 'ok' : v.toUpperCase() === 'X' ? 'ko' : ''; }) });
+      pl.rows.push({ name: noAcc(name), cells: pl.dates.map((_, i) => { const v = norm(S.g(r, i + 2)); return v === '√' || v === '✓' ? 'ok' : v.toUpperCase() === 'X' ? 'ko' : ''; }) });
     }
     out.planning = pl;
   }
@@ -534,7 +535,7 @@ function parseMatchSheet(S) {
     if (/^match\s*\d+/i.test(norm(S.g(r, 1)))) {
       let pr = r + 1; while (pr < r + 4 && norm(S.g(pr, 1)).toLowerCase() !== 'joueurs') pr++;
       cur.matches.push(finish({ no: cur.matches.filter(x => x.side === 'L').length + 1, side: 'L', kind: 'single',
-        p1: { name: norm(S.g(pr + 1, 1)), rank: S.g(pr + 1, 2) }, p2: { name: norm(S.g(pr + 2, 1)), rank: S.g(pr + 2, 2) },
+        p1: { name: noAcc(norm(S.g(pr + 1, 1))), rank: S.g(pr + 1, 2) }, p2: { name: noAcc(norm(S.g(pr + 2, 1))), rank: S.g(pr + 2, 2) },
         s1: setsOf(pr + 1, 3), s2: setsOf(pr + 2, 3), t1: '', t2: '' }));
     }
     // match de droite (doubles 9-10 puis simples 11 → 14)
@@ -544,7 +545,7 @@ function parseMatchSheet(S) {
       const dbl = /double/i.test(hv), no = +hv.match(/\d+/)[0];
       const t1 = typeof S.g(pr + 1, 10) === 'string' ? norm(S.g(pr + 1, 10)) : '', t2 = typeof S.g(pr + 2, 10) === 'string' ? norm(S.g(pr + 2, 10)) : '';
       cur.matches.push(finish({ no, side: 'R', kind: dbl ? 'double' : 'single',
-        p1: { name: norm(S.g(pr + 1, 8)), rank: S.g(pr + 1, 9) }, p2: { name: norm(S.g(pr + 2, 8)), rank: S.g(pr + 2, 9) },
+        p1: { name: noAcc(norm(S.g(pr + 1, 8))), rank: S.g(pr + 1, 9) }, p2: { name: noAcc(norm(S.g(pr + 2, 8))), rank: S.g(pr + 2, 9) },
         s1: t1 ? [null, null, null, null, null] : setsOf(pr + 1, 10), s2: t2 ? [null, null, null, null, null] : setsOf(pr + 2, 10), t1, t2 }));
     }
     if (typeof S.g(r, 8) === 'string' && /^(victoire|d[ée]faite|match nul|nul)/i.test(String(S.g(r, 8)).trim())) {
@@ -578,7 +579,7 @@ function parsePointsSheet(S) {
   const lastJ = jcols.length ? jcols[jcols.length - 1].c : 11;
   const rows = []; let team = null;
   for (let r = hr + 2; r <= hr + 80; r++) {
-    const t = norm(S.g(r, bc)), name = norm(S.g(r, 4));
+    const t = norm(S.g(r, bc)), name = noAcc(norm(S.g(r, 4)));
     if (!name && !t) { if (r > hr + 4 && !S.g(r + 1, 4)) break; else continue; }
     if (t) team = t;
     if (!name) continue;
@@ -764,7 +765,7 @@ function renderHome() {
       <div class="foot"><a class="btn" href="#/equipe/${t.id}/stats">Statistiques de l’équipe</a><a class="btn sec" href="#/equipe/${t.id}/matchs">Feuilles de match</a></div></div>`;
   }).join('');
 
-  const nextTbl = nexts.length ? `<div class="tw"><table class="d"><thead><tr><th class="l">Équipe</th><th>Journée</th><th>Date</th><th class="l">Adversaire</th><th>Lieu</th></tr></thead><tbody>${
+  const nextTbl = nexts.length ? `<div class="tw"><table class="d"><thead><tr><th class="l">Équipes</th><th>Journée</th><th>Date</th><th class="l">Adversaire</th><th>Lieu</th></tr></thead><tbody>${
     nexts.slice(0, 8).map(x => `<tr><td class="l nm"><a href="#/equipe/${x.t.id}/stats">${esc(x.t.club)}</a></td><td>J${x.g.n}</td><td>${x.g.date ? fmtD(x.g.date) : esc(x.g.dateLabel)}</td><td class="l">${esc(x.g.opp)}</td><td>${x.g.home ? 'Domicile' : 'Extérieur'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Aucune rencontre à venir.</div>';
 
   const ptsTbl = pts.length ? `<div class="tw"><table class="d"><thead><tr><th class="l">Joueurs</th><th>Équipe</th><th>Points gagnés / perdus</th><th>Points live</th></tr></thead><tbody>${
