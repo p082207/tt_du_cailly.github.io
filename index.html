@@ -95,6 +95,7 @@ h3.sec .r{margin-left:auto;font-weight:400;font-size:13px}
 .kpi .lab{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
 .kpi .val{font-size:30px;font-weight:600;line-height:1.15;margin-top:2px}
 .kpi .sub{color:var(--mute);font-size:12px;margin-top:2px}
+.kpi .sub.nxt{display:flex;flex-wrap:wrap;gap:2px 12px}
 .kpi.hl{border-top:4px solid var(--yellow)}
 
 /* cartes équipes */
@@ -844,6 +845,9 @@ function renderHome() {
   });
   const played = V + N + D;
   const nexts = snaps.filter(x => x.s.next).map(x => ({ t: x.t, g: x.s.next })).sort((a, b) => (a.g.date || 1e15) - (b.g.date || 1e15));
+  // toutes les équipes qui jouent à la même date que la prochaine rencontre
+  const dayKey = x => x.g.date instanceof Date ? 'd' + x.g.date.getTime() : 'l' + (x.g.dateLabel || '');
+  const nextDay = nexts.length ? nexts.filter(x => dayKey(x) === dayKey(nexts[0])) : [];
   const pts = M.points?.rows.filter(r => r.vals.some(isNum)).sort((a, b) => b.total - a.total) || [];
   const hasPh = allPhases().length > 1;
   const topPts = pts.find(r => isNum(r.total) && r.total > 0) || null;
@@ -853,7 +857,7 @@ function renderHome() {
     <div class="card kpi hl"><div class="lab">Parties individuelles</div><div class="val">${pv} <span style="font-size:18px;color:var(--mute)">V</span> / ${pd} <span style="font-size:18px;color:var(--mute)">D</span></div><div class="sub">${pv + pd ? fmtN(pv / (pv + pd) * 100) + ' % de victoires' : '—'} (tous joueurs)</div></div>
     <div class="card kpi hl"><div class="lab">Meilleur % de victoires</div><div class="val">${bestP ? esc(bestP.short) : '—'}</div><div class="sub">${bestP ? `${fmtN(bestP.pct)} % (${bestP.v}V-${bestP.d}D) · Équipe ${bestP.team.id}` : 'min. 3 matchs joués'}</div></div>
     <div class="card kpi hl"><div class="lab">Meilleur gain de points</div><div class="val">${topPts ? esc(topPts.name) : '—'}</div><div class="sub">${topPts ? `${sgn(topPts.total)} points${topPts.teamNo ? ' · Équipe ' + topPts.teamNo : ''}` : 'Pas encore de points saisis'}</div></div>
-    <div class="card kpi hl"><div class="lab">Prochaine journée</div><div class="val">${nexts[0]?.g.date ? fmtD(nexts[0].g.date) : (nexts[0] ? 'J' + nexts[0].g.n : '—')}</div><div class="sub">${nexts[0] ? `Équipe ${nexts[0].t.id} · J${nexts[0].g.n}` : 'Aucune rencontre à venir'}</div></div>
+    <div class="card kpi hl"><div class="lab">Prochaine journée</div><div class="val">${nexts[0]?.g.date ? fmtD(nexts[0].g.date) : (nexts[0] ? 'J' + nexts[0].g.n : '—')}</div><div class="sub nxt">${nextDay.length ? nextDay.map(x => `<span>Équipe ${x.t.id} · J${x.g.n}</span>`).join('') : 'Aucune rencontre à venir'}</div></div>
   </div>`;
 
   const cards = M.teams.map(t => {
